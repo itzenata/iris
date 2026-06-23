@@ -952,6 +952,7 @@ fn draw_footer(f: &mut Frame, app: &App, area: Rect) {
             chip(" ␣ "), txt(" fold  "),
             chip(" z "), txt(" fold all  "),
             chip(" a/d "), txt(" allow/deny  "),
+            chip(" D "), txt(" delete  "),
             chip(" A "), txt(" arm gating  "),
             chip(" s "), txt(" summary  "),
             chip(" i "), txt(" approvals  "),

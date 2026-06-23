@@ -26,6 +26,30 @@ fn key_file() -> PathBuf {
     bridge::base_dir().join("api_key")
 }
 
+fn hidden_file() -> PathBuf {
+    bridge::base_dir().join("hidden")
+}
+
+/// Load the set of session paths the user has hidden from the dashboard.
+/// Read-only over transcripts: this never touches the `.jsonl` files, it only
+/// records which ones iris should skip rendering.
+fn load_hidden() -> HashSet<PathBuf> {
+    std::fs::read_to_string(hidden_file())
+        .map(|s| s.lines().filter(|l| !l.is_empty()).map(PathBuf::from).collect())
+        .unwrap_or_default()
+}
+
+/// Persist the hidden set, one path per line.
+fn save_hidden(hidden: &HashSet<PathBuf>) {
+    let _ = std::fs::create_dir_all(bridge::base_dir());
+    let body: String = hidden
+        .iter()
+        .map(|p| p.display().to_string())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let _ = std::fs::write(hidden_file(), body);
+}
+
 /// Resolve the API key: `ANTHROPIC_API_KEY` wins, else the saved key file.
 fn load_api_key() -> Option<String> {
     if let Some(k) = std::env::var("ANTHROPIC_API_KEY").ok().filter(|k| !k.is_empty()) {
@@ -99,6 +123,9 @@ pub struct App {
     selected_key: Option<SelKey>,
     /// Project groups the user (or auto-collapse) has folded shut.
     collapsed: HashSet<String>,
+    /// Session transcript paths the user deleted from the dashboard view. The
+    /// files on disk are untouched (read-only contract); these are just hidden.
+    hidden: HashSet<PathBuf>,
     /// Groups already evaluated for auto-collapse, so a manual expand sticks.
     known_groups: HashSet<String>,
 
@@ -170,6 +197,7 @@ impl App {
             selected: 0,
             selected_key: None,
             collapsed: HashSet::new(),
+            hidden: load_hidden(),
             known_groups: HashSet::new(),
             last_refresh: Instant::now(),
             should_quit: false,
@@ -519,6 +547,7 @@ RISK: low|medium|high",
         let mut active: Vec<&Session> = self
             .readers
             .values()
+            .filter(|s| !self.hidden.contains(&s.path))
             .filter(|s| {
                 s.mtime >= cutoff
                     || s.status() == Status::NeedsApproval
@@ -767,6 +796,21 @@ RISK: low|medium|high",
         match self.rows.get(self.selected) {
             Some(Row::Session { path, .. }) => Some(path.clone()),
             _ => None,
+        }
+    }
+
+    /// "Delete" the selected session from the dashboard. Read-only contract:
+    /// this only hides it from view (persisted across refreshes), the transcript
+    /// `.jsonl` file is never touched.
+    pub fn hide_selected(&mut self) {
+        let Some(path) = self.selected_path() else { return };
+        self.hidden.insert(path.clone());
+        save_hidden(&self.hidden);
+        self.flash = Some("session removed from view (transcript on disk untouched)".into());
+        self.refresh();
+        // Clamp selection in case the last row went away.
+        if self.selected >= self.rows.len() {
+            self.selected = self.rows.len().saturating_sub(1);
         }
     }
 

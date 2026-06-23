@@ -334,6 +334,9 @@ fn event_loop(terminal: &mut ratatui::DefaultTerminal, app: &mut App) -> Result<
                                 app.enter_focus()
                             }
                         }
+                        // Capital D: delete (hide) the selected session from the
+                        // dashboard. Transcript file on disk is left untouched.
+                        KeyCode::Char('D') => app.hide_selected(),
                         KeyCode::Char(' ') => app.toggle_selected_group(),
                         KeyCode::Char('z') => app.toggle_all_groups(),
                         KeyCode::Char('i') => app.open_install(),
