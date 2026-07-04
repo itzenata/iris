@@ -538,3 +538,254 @@ pub fn discover(dir: &Path) -> Vec<PathBuf> {
     }
     out
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::TempDir;
+
+    // Each test writes its own transcript into its own TempDir (auto-deleted on
+    // drop), so tests are fully isolated, parallel-safe, and never touch the
+    // real ~/.claude/projects.
+
+    /// Create a transcript file containing `lines` and a Session tailing it.
+    fn session_with(dir: &TempDir, lines: &[&str]) -> Session {
+        let path = dir.path().join("test-session.jsonl");
+        let mut f = File::create(&path).unwrap();
+        for l in lines {
+            writeln!(f, "{l}").unwrap();
+        }
+        let mut s = Session::new(path);
+        s.refresh().unwrap();
+        s
+    }
+
+    fn append(s: &Session, lines: &[&str]) {
+        let mut f = std::fs::OpenOptions::new().append(true).open(&s.path).unwrap();
+        for l in lines {
+            writeln!(f, "{l}").unwrap();
+        }
+    }
+
+    // ---- Format tolerance: garbage in, no panic, good lines still parse ----
+
+    #[test]
+    fn malformed_lines_are_skipped_without_breaking_good_ones() {
+        let dir = TempDir::new().unwrap();
+        let s = session_with(
+            &dir,
+            &[
+                "not json at all {{{",
+                "",
+                r#"{"type":"user","message":{"content":"hello iris"}}"#,
+                r#"{"type": 42, "message": null}"#,
+                r#"{"unknown_type_entirely": true}"#,
+                r#"[1,2,3]"#,
+                r#""just a string""#,
+            ],
+        );
+        // The one valid prompt survived; the garbage was ignored.
+        assert_eq!(s.first_prompt.as_deref(), Some("hello iris"));
+        assert_eq!(s.events.len(), 1);
+    }
+
+    #[test]
+    fn empty_file_parses_to_empty_session() {
+        let dir = TempDir::new().unwrap();
+        let s = session_with(&dir, &[]);
+        assert!(s.events.is_empty());
+        assert!(s.first_prompt.is_none());
+        assert_eq!(s.usage.total(), 0);
+    }
+
+    #[test]
+    fn missing_optional_fields_are_tolerated() {
+        let dir = TempDir::new().unwrap();
+        // assistant with no model, no usage, no content; user with no message.
+        let s = session_with(
+            &dir,
+            &[
+                r#"{"type":"assistant","message":{}}"#,
+                r#"{"type":"user"}"#,
+            ],
+        );
+        assert_eq!(s.assistant_turns, 1);
+        assert!(s.model.is_none());
+        assert_eq!(s.usage.total(), 0);
+    }
+
+    // ---- Metadata extraction ----
+
+    #[test]
+    fn extracts_cwd_branch_model_title_and_usage() {
+        let dir = TempDir::new().unwrap();
+        let s = session_with(
+            &dir,
+            &[
+                r#"{"type":"ai-title","aiTitle":"Fixing the parser"}"#,
+                r#"{"type":"user","cwd":"/home/me/proj","gitBranch":"main","message":{"content":"do it"}}"#,
+                r#"{"type":"assistant","message":{"model":"claude-opus-4-8","usage":{"input_tokens":100,"output_tokens":50,"cache_creation_input_tokens":10,"cache_read_input_tokens":5},"content":[{"type":"text","text":"done"}],"stop_reason":"end_turn"}}"#,
+            ],
+        );
+        assert_eq!(s.title.as_deref(), Some("Fixing the parser"));
+        assert_eq!(s.cwd.as_deref(), Some("/home/me/proj"));
+        assert_eq!(s.project(), "proj");
+        assert_eq!(s.branch.as_deref(), Some("main"));
+        assert_eq!(s.model.as_deref(), Some("claude-opus-4-8"));
+        assert_eq!(s.usage.input, 100);
+        assert_eq!(s.usage.output, 50);
+        assert_eq!(s.usage.cache_creation, 10);
+        assert_eq!(s.usage.cache_read, 5);
+        assert_eq!(s.usage.total(), 165);
+    }
+
+    #[test]
+    fn usage_accumulates_across_turns() {
+        let dir = TempDir::new().unwrap();
+        let turn = r#"{"type":"assistant","message":{"usage":{"input_tokens":10,"output_tokens":5},"content":[]}}"#;
+        let s = session_with(&dir, &[turn, turn, turn]);
+        assert_eq!(s.assistant_turns, 3);
+        assert_eq!(s.usage.input, 30);
+        assert_eq!(s.usage.output, 15);
+    }
+
+    // ---- Blocked / done state machine ----
+
+    #[test]
+    fn turn_ending_on_tool_use_sets_pending_tool() {
+        let dir = TempDir::new().unwrap();
+        let s = session_with(
+            &dir,
+            &[
+                r#"{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"ls"}}]}}"#,
+            ],
+        );
+        assert_eq!(s.pending_tool.as_deref(), Some("Bash"));
+        assert!(!s.turn_done);
+        assert_eq!(s.tool_counts.get("Bash"), Some(&1));
+        // Fresh file (age ~0) + pending tool ⇒ Working, not NeedsApproval:
+        // only a live hook request may show the red state.
+        assert_eq!(s.status().rank(), Status::Working.rank());
+    }
+
+    #[test]
+    fn tool_result_unblocks_the_session() {
+        let dir = TempDir::new().unwrap();
+        let mut s = session_with(
+            &dir,
+            &[
+                r#"{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"ls"}}]}}"#,
+            ],
+        );
+        assert!(s.pending_tool.is_some());
+        append(
+            &s,
+            &[
+                r#"{"type":"user","message":{"content":[{"type":"tool_result","content":"file1\nfile2"}]}}"#,
+            ],
+        );
+        s.refresh().unwrap();
+        assert!(s.pending_tool.is_none(), "a tool_result must clear the block");
+    }
+
+    #[test]
+    fn end_turn_marks_done() {
+        let dir = TempDir::new().unwrap();
+        let s = session_with(
+            &dir,
+            &[
+                r#"{"type":"assistant","message":{"content":[{"type":"text","text":"all done"}],"stop_reason":"end_turn"}}"#,
+            ],
+        );
+        assert!(s.turn_done);
+        assert!(s.pending_tool.is_none());
+        assert_eq!(s.status().rank(), Status::Done.rank());
+    }
+
+    // ---- Incremental tailing ----
+
+    #[test]
+    fn refresh_picks_up_only_appended_lines() {
+        let dir = TempDir::new().unwrap();
+        let mut s = session_with(&dir, &[r#"{"type":"user","message":{"content":"first"}}"#]);
+        assert_eq!(s.events.len(), 1);
+
+        // No new bytes ⇒ refresh reports nothing to do.
+        assert!(!s.refresh().unwrap());
+
+        append(&s, &[r#"{"type":"user","message":{"content":"second"}}"#]);
+        assert!(s.refresh().unwrap());
+        assert_eq!(s.events.len(), 2, "old lines must not be re-processed");
+        assert_eq!(s.first_prompt.as_deref(), Some("first"));
+    }
+
+    #[test]
+    fn partial_line_is_buffered_until_newline_arrives() {
+        let dir = TempDir::new().unwrap();
+        let mut s = session_with(&dir, &[]);
+
+        // Write half a JSON line with NO trailing newline (a writer mid-flush).
+        let half = r#"{"type":"user","message":{"content":"split"#;
+        let mut f = std::fs::OpenOptions::new().append(true).open(&s.path).unwrap();
+        write!(f, "{half}").unwrap();
+        drop(f);
+        s.refresh().unwrap();
+        assert!(s.events.is_empty(), "half a line must not be parsed");
+
+        // Complete the line.
+        let mut f = std::fs::OpenOptions::new().append(true).open(&s.path).unwrap();
+        writeln!(f, r#" prompt"}}}}"#).unwrap();
+        drop(f);
+        s.refresh().unwrap();
+        assert_eq!(s.events.len(), 1, "completed line parses on the next refresh");
+        assert_eq!(s.first_prompt.as_deref(), Some("split prompt"));
+    }
+
+    #[test]
+    fn truncated_file_is_reread_from_the_top() {
+        let dir = TempDir::new().unwrap();
+        let mut s = session_with(
+            &dir,
+            &[
+                r#"{"type":"user","message":{"content":"old long line that makes the file big"}}"#,
+            ],
+        );
+        assert_eq!(s.events.len(), 1);
+
+        // Rotate: replace with a shorter file.
+        std::fs::write(&s.path, "{\"type\":\"user\",\"message\":{\"content\":\"new\"}}\n").unwrap();
+        s.refresh().unwrap();
+        assert_eq!(
+            s.events.back().unwrap().text,
+            "new",
+            "after truncation the parser must restart from offset 0"
+        );
+    }
+
+    // ---- Pure helpers ----
+
+    #[test]
+    fn clamp_shortens_and_flattens_whitespace() {
+        assert_eq!(clamp("a\nb\tc", 100), "a b c");
+        assert_eq!(clamp("  spaced   out  ", 100), "spaced out");
+        let long = "x".repeat(300);
+        let out = clamp(&long, 10);
+        assert_eq!(out.chars().count(), 10);
+        assert!(out.ends_with('…'));
+    }
+
+    #[test]
+    fn discover_finds_jsonl_files_one_level_deep() {
+        let dir = TempDir::new().unwrap();
+        let proj = dir.path().join("-home-me-proj");
+        std::fs::create_dir(&proj).unwrap();
+        std::fs::write(proj.join("abc.jsonl"), "").unwrap();
+        std::fs::write(proj.join("notes.txt"), "").unwrap();
+        std::fs::write(dir.path().join("toplevel.jsonl"), "").unwrap(); // wrong depth
+
+        let found = discover(dir.path());
+        assert_eq!(found.len(), 1);
+        assert!(found[0].ends_with("abc.jsonl"));
+    }
+}

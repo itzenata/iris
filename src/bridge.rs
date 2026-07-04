@@ -29,6 +29,11 @@ const POLL_INTERVAL: Duration = Duration::from_millis(200);
 const REQUEST_STALE_SECS: u64 = 30;
 
 pub fn base_dir() -> PathBuf {
+    // Tests set IRIS_BASE_DIR to an isolated temp dir so they never touch the
+    // real ~/.claude/iris. Unset in normal use ⇒ behavior is unchanged.
+    if let Ok(dir) = std::env::var("IRIS_BASE_DIR") {
+        return PathBuf::from(dir);
+    }
     dirs::home_dir()
         .unwrap_or_default()
         .join(".claude")
@@ -245,12 +250,20 @@ pub fn write_decision(id: &str, allow: bool, reason: &str) {
 
 // ---- hook side -------------------------------------------------------------
 
+/// Pure staleness rule: a heartbeat this many seconds old still counts as live.
+/// Extracted so the "never hang a session" boundary is unit-testable. Any
+/// ambiguity (missing/unreadable heartbeat) is handled by the caller as "not
+/// live", so the hook always defers rather than blocks.
+fn heartbeat_fresh(age_secs: u64) -> bool {
+    age_secs <= HEARTBEAT_STALE_SECS
+}
+
 fn iris_live() -> bool {
     std::fs::metadata(heartbeat_path())
         .and_then(|m| m.modified())
         .ok()
         .and_then(|t| SystemTime::now().duration_since(t).ok())
-        .map(|age| age.as_secs() <= HEARTBEAT_STALE_SECS)
+        .map(|age| heartbeat_fresh(age.as_secs()))
         .unwrap_or(false)
 }
 
@@ -491,4 +504,155 @@ fn tool_brief(name: &str, input: Option<&Value>) -> String {
     };
     let one = picked.split_whitespace().collect::<Vec<_>>().join(" ");
     one.chars().take(120).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Mutex;
+    use tempfile::TempDir;
+
+    // The filesystem tests share one process-wide env var (IRIS_BASE_DIR), so
+    // they must not run concurrently. This lock serializes them; the pure tests
+    // below take no lock and run freely in parallel. `unwrap_or_else(into_inner)`
+    // shrugs off a poisoned lock so one panicking test can't cascade-fail the rest.
+    static FS_LOCK: Mutex<()> = Mutex::new(());
+
+    fn fs_lock() -> std::sync::MutexGuard<'static, ()> {
+        FS_LOCK.lock().unwrap_or_else(|p| p.into_inner())
+    }
+
+    /// Point iris at a fresh, empty temp dir for the duration of a test. The
+    /// returned `TempDir` deletes itself (and everything in it) the moment it is
+    /// dropped at the end of the test, so nothing leaks into /tmp and no test
+    /// ever sees another's files. Keep the guard bound (`let _dir = ...`) so it
+    /// lives for the whole test.
+    fn use_temp_base() -> TempDir {
+        let dir = TempDir::new().expect("create temp dir");
+        std::env::set_var("IRIS_BASE_DIR", dir.path());
+        dir
+    }
+
+    // ---- The safety contract: "never hang a session" --------------------
+
+    #[test]
+    fn heartbeat_fresh_at_and_below_threshold_is_live() {
+        assert!(heartbeat_fresh(0), "a brand-new heartbeat must be live");
+        assert!(
+            heartbeat_fresh(HEARTBEAT_STALE_SECS),
+            "exactly at the threshold still counts as live"
+        );
+    }
+
+    #[test]
+    fn heartbeat_past_threshold_is_not_live() {
+        assert!(
+            !heartbeat_fresh(HEARTBEAT_STALE_SECS + 1),
+            "one second past the threshold must read as NOT live, so the hook defers"
+        );
+        assert!(!heartbeat_fresh(9999), "an ancient heartbeat is never live");
+    }
+
+    #[test]
+    fn missing_heartbeat_reads_as_not_live() {
+        let _guard = fs_lock();
+        let _dir = use_temp_base();
+        // No heartbeat file exists in the fresh temp dir.
+        assert!(
+            !iris_live(),
+            "with no heartbeat file the hook must treat iris as down and defer"
+        );
+    }
+
+    #[test]
+    fn fresh_heartbeat_reads_as_live() {
+        let _guard = fs_lock();
+        let _dir = use_temp_base();
+        touch_heartbeat();
+        assert!(iris_live(), "a heartbeat just written must read as live");
+    }
+
+    // ---- Gating (opt-in interception) -----------------------------------
+
+    #[test]
+    fn gating_round_trips() {
+        let _guard = fs_lock();
+        let _dir = use_temp_base();
+        assert!(!gating_armed(), "gating starts disarmed");
+        set_gating(true);
+        assert!(gating_armed(), "set_gating(true) arms it");
+        set_gating(false);
+        assert!(!gating_armed(), "set_gating(false) disarms it");
+    }
+
+    // ---- Request lifecycle / GC -----------------------------------------
+
+    fn write_request(id: &str, ts: u64) {
+        ensure_dirs();
+        let req = json!({
+            "id": id,
+            "session_id": "sess",
+            "tool_name": "Bash",
+            "brief": "echo hi",
+            "tool_input": { "command": "echo hi" },
+            "cwd": "/tmp",
+            "ts": ts,
+        });
+        std::fs::write(requests_dir().join(format!("{id}.json")), req.to_string()).unwrap();
+    }
+
+    #[test]
+    fn load_pending_keeps_fresh_and_reaps_stale() {
+        let _guard = fs_lock();
+        let _dir = use_temp_base();
+        write_request("fresh", now_secs());
+        write_request("old", now_secs().saturating_sub(REQUEST_STALE_SECS + 5));
+
+        let pending = load_pending();
+        let ids: Vec<_> = pending.iter().map(|p| p.id.as_str()).collect();
+        assert_eq!(pending.len(), 1, "only the fresh request should survive");
+        assert!(ids.contains(&"fresh"));
+        assert!(
+            !requests_dir().join("old.json").exists(),
+            "the stale request file must be deleted, not left as a phantom"
+        );
+    }
+
+    #[test]
+    fn write_decision_records_choice_and_drops_request() {
+        let _guard = fs_lock();
+        let _dir = use_temp_base();
+        write_request("abc", now_secs());
+        write_decision("abc", true, "looks safe");
+
+        assert!(
+            !requests_dir().join("abc.json").exists(),
+            "the request must be removed so the TUI stops showing it"
+        );
+        let body = std::fs::read_to_string(decisions_dir().join("abc.json")).unwrap();
+        let v: Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(v["decision"], "allow");
+        assert_eq!(v["reason"], "looks safe");
+    }
+
+    // ---- Pure helpers ---------------------------------------------------
+
+    #[test]
+    fn tool_brief_picks_the_meaningful_field() {
+        let input = json!({ "command": "cargo test --all" });
+        assert_eq!(tool_brief("Bash", Some(&input)), "cargo test --all");
+
+        let input = json!({ "file_path": "/etc/hosts" });
+        assert_eq!(tool_brief("Read", Some(&input)), "/etc/hosts");
+
+        assert_eq!(tool_brief("Bash", None), "");
+    }
+
+    #[test]
+    fn is_iris_hook_matches_only_the_iris_hook_command() {
+        assert!(is_iris_hook("/home/me/.cargo/bin/iris hook"));
+        assert!(is_iris_hook("iris hook"));
+        assert!(!is_iris_hook("iris ls"));
+        assert!(!is_iris_hook("some-other-tool hook"));
+    }
 }
