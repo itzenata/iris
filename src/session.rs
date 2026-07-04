@@ -182,7 +182,11 @@ impl Session {
         if self.pending_tool.is_some() {
             // Ended on a tool_use with no result yet: the tool is running, or the
             // session was quietly abandoned mid-call. Neither needs you.
-            return if age <= 20 { Status::Working } else { Status::Idle };
+            return if age <= 20 {
+                Status::Working
+            } else {
+                Status::Idle
+            };
         }
         if self.turn_done {
             return if age <= 8 { Status::Done } else { Status::Idle };
@@ -213,11 +217,17 @@ impl Session {
         };
         let mut out = String::new();
         out.push_str(&format!("Title: {}\n", self.label()));
-        out.push_str(&format!("Project dir: {}\n", self.cwd.as_deref().unwrap_or("?")));
+        out.push_str(&format!(
+            "Project dir: {}\n",
+            self.cwd.as_deref().unwrap_or("?")
+        ));
         if let Some(b) = &self.branch {
             out.push_str(&format!("Git branch: {b}\n"));
         }
-        out.push_str(&format!("Model: {}\n", self.model.as_deref().unwrap_or("?")));
+        out.push_str(&format!(
+            "Model: {}\n",
+            self.model.as_deref().unwrap_or("?")
+        ));
         out.push_str(&format!("Status: {status}\n"));
         if let Some(t) = &self.pending_tool {
             out.push_str(&format!("Blocked on tool: {t}\n"));
@@ -337,10 +347,7 @@ impl Session {
                     match b.get("type").and_then(Value::as_str) {
                         Some("tool_result") => {
                             has_tool_result = true;
-                            let error = b
-                                .get("is_error")
-                                .and_then(Value::as_bool)
-                                .unwrap_or(false);
+                            let error = b.get("is_error").and_then(Value::as_bool).unwrap_or(false);
                             let brief = result_brief(b.get("content"));
                             self.push(Event {
                                 ts,
@@ -415,8 +422,11 @@ impl Session {
                         });
                     }
                     Some("tool_use") => {
-                        let name =
-                            b.get("name").and_then(Value::as_str).unwrap_or("tool").to_string();
+                        let name = b
+                            .get("name")
+                            .and_then(Value::as_str)
+                            .unwrap_or("tool")
+                            .to_string();
                         *self.tool_counts.entry(name.clone()).or_insert(0) += 1;
                         let brief = tool_brief(&name, b.get("input"));
                         last_tool = Some(name.clone());
@@ -562,7 +572,10 @@ mod tests {
     }
 
     fn append(s: &Session, lines: &[&str]) {
-        let mut f = std::fs::OpenOptions::new().append(true).open(&s.path).unwrap();
+        let mut f = std::fs::OpenOptions::new()
+            .append(true)
+            .open(&s.path)
+            .unwrap();
         for l in lines {
             writeln!(f, "{l}").unwrap();
         }
@@ -605,10 +618,7 @@ mod tests {
         // assistant with no model, no usage, no content; user with no message.
         let s = session_with(
             &dir,
-            &[
-                r#"{"type":"assistant","message":{}}"#,
-                r#"{"type":"user"}"#,
-            ],
+            &[r#"{"type":"assistant","message":{}}"#, r#"{"type":"user"}"#],
         );
         assert_eq!(s.assistant_turns, 1);
         assert!(s.model.is_none());
@@ -686,7 +696,10 @@ mod tests {
             ],
         );
         s.refresh().unwrap();
-        assert!(s.pending_tool.is_none(), "a tool_result must clear the block");
+        assert!(
+            s.pending_tool.is_none(),
+            "a tool_result must clear the block"
+        );
     }
 
     #[test]
@@ -727,18 +740,28 @@ mod tests {
 
         // Write half a JSON line with NO trailing newline (a writer mid-flush).
         let half = r#"{"type":"user","message":{"content":"split"#;
-        let mut f = std::fs::OpenOptions::new().append(true).open(&s.path).unwrap();
+        let mut f = std::fs::OpenOptions::new()
+            .append(true)
+            .open(&s.path)
+            .unwrap();
         write!(f, "{half}").unwrap();
         drop(f);
         s.refresh().unwrap();
         assert!(s.events.is_empty(), "half a line must not be parsed");
 
         // Complete the line.
-        let mut f = std::fs::OpenOptions::new().append(true).open(&s.path).unwrap();
+        let mut f = std::fs::OpenOptions::new()
+            .append(true)
+            .open(&s.path)
+            .unwrap();
         writeln!(f, r#" prompt"}}}}"#).unwrap();
         drop(f);
         s.refresh().unwrap();
-        assert_eq!(s.events.len(), 1, "completed line parses on the next refresh");
+        assert_eq!(
+            s.events.len(),
+            1,
+            "completed line parses on the next refresh"
+        );
         assert_eq!(s.first_prompt.as_deref(), Some("split prompt"));
     }
 
@@ -747,14 +770,16 @@ mod tests {
         let dir = TempDir::new().unwrap();
         let mut s = session_with(
             &dir,
-            &[
-                r#"{"type":"user","message":{"content":"old long line that makes the file big"}}"#,
-            ],
+            &[r#"{"type":"user","message":{"content":"old long line that makes the file big"}}"#],
         );
         assert_eq!(s.events.len(), 1);
 
         // Rotate: replace with a shorter file.
-        std::fs::write(&s.path, "{\"type\":\"user\",\"message\":{\"content\":\"new\"}}\n").unwrap();
+        std::fs::write(
+            &s.path,
+            "{\"type\":\"user\",\"message\":{\"content\":\"new\"}}\n",
+        )
+        .unwrap();
         s.refresh().unwrap();
         assert_eq!(
             s.events.back().unwrap().text,

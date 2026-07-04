@@ -178,10 +178,7 @@ pub fn load_pending() -> Vec<Pending> {
                 .ok()
                 .and_then(|text| serde_json::from_str::<Value>(&text).ok());
 
-            let ts = parsed
-                .as_ref()
-                .and_then(|v| v["ts"].as_u64())
-                .unwrap_or(0);
+            let ts = parsed.as_ref().and_then(|v| v["ts"].as_u64()).unwrap_or(0);
             let age = if ts != 0 {
                 now_secs().saturating_sub(ts)
             } else {
@@ -334,7 +331,9 @@ pub fn run_hook() -> i32 {
             if decision == "allow" || decision == "deny" {
                 emit(decision, reason);
             } else {
-                log(&format!("hook: decision '{decision}' not allow/deny → defer"));
+                log(&format!(
+                    "hook: decision '{decision}' not allow/deny → defer"
+                ));
             }
             return 0;
         }
@@ -405,7 +404,10 @@ pub fn uninstall_hook(project: bool) -> Result<String, String> {
     }
     let out = serde_json::to_string_pretty(&root).map_err(|e| e.to_string())?;
     std::fs::write(&path, out).map_err(|e| e.to_string())?;
-    Ok(format!("removed {removed} iris hook(s) from {}", path.display()))
+    Ok(format!(
+        "removed {removed} iris hook(s) from {}",
+        path.display()
+    ))
 }
 
 /// Register `iris hook` as a PreToolUse hook in settings.json (idempotent).
@@ -434,7 +436,9 @@ pub fn install_hook(project: bool) -> Result<String, String> {
         .ok_or("hooks is not an object")?
         .entry("PreToolUse")
         .or_insert_with(|| json!([]));
-    let arr = pre.as_array_mut().ok_or("hooks.PreToolUse is not an array")?;
+    let arr = pre
+        .as_array_mut()
+        .ok_or("hooks.PreToolUse is not an array")?;
 
     // Already installed?
     let installed = arr.iter().any(|entry| {
@@ -442,9 +446,8 @@ pub fn install_hook(project: bool) -> Result<String, String> {
             .get("hooks")
             .and_then(Value::as_array)
             .map(|hs| {
-                hs.iter().any(|h| {
-                    h.get("command").and_then(Value::as_str) == Some(command.as_str())
-                })
+                hs.iter()
+                    .any(|h| h.get("command").and_then(Value::as_str) == Some(command.as_str()))
             })
             .unwrap_or(false)
     });
