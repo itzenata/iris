@@ -158,8 +158,8 @@ fn print_list(app: &App) {
     // Ignore write errors (e.g. a broken pipe when piped into `head`).
     let _ = writeln!(
         out,
-        "{:<3} {:<22} {:<16} {:<13} {:>8} {:>7}  {}",
-        "", "STATE", "PROJECT", "MODEL", "TOKENS", "~COST", "TITLE"
+        "{:<3} {:<22} {:<16} {:<13} {:>8} {:>7}  TITLE",
+        "", "STATE", "PROJECT", "MODEL", "TOKENS", "~COST"
     );
     for s in app.sessions() {
         let (icon, _color, state) = ui::status_glyph(s);

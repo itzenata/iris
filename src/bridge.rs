@@ -158,7 +158,7 @@ pub fn load_pending() -> Vec<Pending> {
     };
     for entry in rd.flatten() {
         let p = entry.path();
-        if p.extension().map_or(false, |x| x == "json") {
+        if p.extension().is_some_and(|x| x == "json") {
             // A request the hook can no longer act on is litter — reap it. We use
             // the request's own `ts`, falling back to the file mtime for
             // empty/corrupt files (a hook killed before it finished writing).
