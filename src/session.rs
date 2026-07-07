@@ -530,7 +530,7 @@ pub fn discover(dir: &Path) -> Vec<PathBuf> {
         if let Ok(inner) = std::fs::read_dir(&p) {
             for e2 in inner.flatten() {
                 let p2 = e2.path();
-                if p2.extension().map_or(false, |x| x == "jsonl") {
+                if p2.extension().is_some_and(|x| x == "jsonl") {
                     out.push(p2);
                 }
             }
