@@ -58,7 +58,19 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
 
       - name: cargo publish
-        run: cargo publish
+        # Idempotent: a re-pushed tag (e.g. to re-run a failed later job) must
+        # not fail the run just because this version is already on crates.io.
+        run: |
+          if out="$(cargo publish 2>&1)"; then
+            echo "$out"
+          else
+            echo "$out"
+            if echo "$out" | grep -qi "already uploaded\|already exists"; then
+              echo "version already on crates.io — continuing"
+            else
+              exit 1
+            fi
+          fi
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
