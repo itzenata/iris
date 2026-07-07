@@ -9,6 +9,8 @@ homepage = "https://itzenata.github.io/iris/"
 readme = "README.md"
 keywords = ["claude", "tui", "terminal", "dashboard", "monitoring"]
 categories = ["command-line-utilities", "development-tools"]
+# Keep the published package lean: site, screenshots, and GitHub meta stay in the repo only.
+exclude = ["docs/", ".github/", "CONTRIBUTING.md", "CLAUDE.md"]
 
 [[bin]]
 name = "iris"
