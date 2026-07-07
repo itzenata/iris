@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2021"
 description = "Live supervisor TUI for all active Claude Code sessions"
 license = "MIT"
+repository = "https://github.com/itzenata/iris"
+homepage = "https://itzenata.github.io/iris/"
+readme = "README.md"
+keywords = ["claude", "tui", "terminal", "dashboard", "monitoring"]
+categories = ["command-line-utilities", "development-tools"]
 
 [[bin]]
 name = "iris"
