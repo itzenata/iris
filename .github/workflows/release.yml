@@ -35,6 +35,13 @@ jobs:
             exit 1
           fi
 
+      - name: CHANGELOG has a section for this tag
+        run: |
+          if ! grep -q "^## ${GITHUB_REF_NAME}\( \|$\)" CHANGELOG.md; then
+            echo "CHANGELOG.md has no \"## ${GITHUB_REF_NAME}\" section" >&2
+            exit 1
+          fi
+
       - name: Clippy (warnings are errors)
         run: cargo clippy --all-targets -- -D warnings
 
@@ -95,11 +102,23 @@ jobs:
     needs: [publish, binaries]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           merge-multiple: true
 
+      - name: Extract this version's CHANGELOG section
+        run: |
+          awk -v tag="${GITHUB_REF_NAME}" '
+            $0 ~ "^## " tag "( |$)" { found=1; next }
+            /^## / && found { exit }
+            found { print }
+          ' CHANGELOG.md > release-body.md
+
       - uses: softprops/action-gh-release@v2
         with:
           files: iris-*.tar.gz
+          body_path: release-body.md
+          append_body: true
           generate_release_notes: true

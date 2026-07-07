@@ -35,11 +35,13 @@ cargo run          # sanity-check the TUI
 
 Releases are automated by [`release.yml`](.github/workflows/release.yml):
 
-1. Bump `version` in `Cargo.toml`, commit, and push.
+1. Bump `version` in `Cargo.toml` and add a `## v0.x.y — <date>` section to
+   [CHANGELOG.md](CHANGELOG.md), commit, and push.
 2. Tag and push: `git tag v0.x.y && git push origin v0.x.y`.
-3. The workflow verifies (clippy + tests + tag/version match), publishes to
-   crates.io (via the `CARGO_REGISTRY_TOKEN` repo secret), builds Linux and
-   macOS binaries, and attaches them to a GitHub Release.
+3. The workflow verifies (clippy + tests + tag/version/CHANGELOG checks),
+   publishes to crates.io (via the `CARGO_REGISTRY_TOKEN` repo secret), builds
+   Linux and macOS binaries, and attaches them to a GitHub Release whose body
+   is the CHANGELOG section plus GitHub's auto-generated notes.
 
 ## Code of conduct
 
