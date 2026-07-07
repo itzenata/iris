@@ -1,10 +1,10 @@
 # iris
 
-> A live terminal supervisor for every active Claude Code session. **Alpha — working build, not yet published to crates.io.**
+> A live terminal supervisor for every active Claude Code session. **`cargo install iris-tui`** — the binary is `iris`.
 
+[![crates.io](https://img.shields.io/crates/v/iris-tui?logo=rust&color=e6b800)](https://crates.io/crates/iris-tui)
 [![CI](https://img.shields.io/github/actions/workflow/status/itzenata/iris/ci.yml?branch=main&label=CI)](https://github.com/itzenata/iris/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/itzenata/iris?color=blue)](LICENSE)
-[![Status: alpha](https://img.shields.io/badge/status-alpha-yellow)](#whats-working-today)
 [![Built with Rust](https://img.shields.io/badge/built%20with-Rust-dea584?logo=rust&logoColor=white)](https://www.rust-lang.org)
 [![Made for Claude Code](https://img.shields.io/badge/made%20for-Claude%20Code-c678dd)](https://claude.com/claude-code)
 [![Stars](https://img.shields.io/github/stars/itzenata/iris?style=social)](https://github.com/itzenata/iris/stargazers)
@@ -70,13 +70,11 @@ A single live pane, refreshed every second:
 
 ## Install
 
-Not yet on crates.io. To build the alpha:
-
 ```bash
-git clone https://github.com/itzenata/iris.git
-cd iris
-cargo install --path .   # drops `iris` in ~/.cargo/bin
+cargo install iris-tui   # installs the `iris` binary in ~/.cargo/bin
 ```
+
+(The crate is `iris-tui` — `iris` is a reserved name on crates.io — but the command you run is `iris`.) Prebuilt Linux and macOS binaries are on the [releases page](https://github.com/itzenata/iris/releases), or build from source with `cargo install --path .` after cloning.
 
 Then:
 
@@ -127,7 +125,7 @@ Single static binary, built with Rust + [ratatui](https://ratatui.rs). Reads `~/
 - [x] [CONTRIBUTING guide](./CONTRIBUTING.md) + PR template
 - [x] crates.io publish metadata in `Cargo.toml`
 - [x] 60s demo video + validation post
-- [ ] Publish to crates.io / prebuilt binaries
+- [x] Published to crates.io as [`iris-tui`](https://crates.io/crates/iris-tui) + prebuilt binaries on [releases](https://github.com/itzenata/iris/releases)
 
 ## Get involved
 

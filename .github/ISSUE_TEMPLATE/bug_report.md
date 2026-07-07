@@ -4,7 +4,7 @@ about: Report a problem with iris (the TUI, the hook, summaries, or cost figures
 labels: ["bug", "needs-triage"]
 ---
 
-> Note: iris is currently in **alpha** — built from source, not yet on crates.io. Cost figures are estimates by design; if a number looks off, check `src/cost.rs` before filing.
+> Note: cost figures are estimates by design; if a number looks off, check `src/cost.rs` before filing. Please include the version (`iris-tui` release, or commit if built from source).
 
 ## What happened?
 

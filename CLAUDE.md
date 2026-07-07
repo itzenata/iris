@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **iris** is a live terminal supervisor (TUI) for every active Claude Code session. It reads the transcript files Claude Code writes under `~/.claude/projects/<slug>/<uuid>.jsonl`, tails the active ones, and renders a single dashboard: per-session status, model, tokens, estimated cost, a live activity feed, a tool-usage histogram, opt-in AI summaries, and remote approve/deny of pending tool calls.
 
-It is a **working alpha** — single static Rust binary, no daemon, no config beyond an optional approval hook.
+It is published on crates.io as **`iris-tui`** (the binary is `iris`) — single static Rust binary, no daemon, no config beyond an optional approval hook. Releases are tag-driven: bump `Cargo.toml`, add a `CHANGELOG.md` section, push a `v*` tag.
 
 - [README.md](./README.md) is the 1-minute pitch, the key map, and the progress checklist.
 - [docs/index.html](./docs/index.html) is the GitHub Pages landing page.

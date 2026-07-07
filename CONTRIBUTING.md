@@ -1,6 +1,6 @@
 # Contributing to iris
 
-Thanks for taking the time — iris is a working alpha and contributions are very welcome.
+Thanks for taking the time — iris is young (published on crates.io as [`iris-tui`](https://crates.io/crates/iris-tui)) and contributions are very welcome.
 
 ## The short version
 
