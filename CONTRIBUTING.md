@@ -31,6 +31,16 @@ cargo run          # sanity-check the TUI
 - Update docs when behavior changes — especially the **key map in [README.md](README.md#keys)** if you add a binding.
 - Keep commits focused; no `Co-Authored-By` trailers needed.
 
+## Releasing (maintainers)
+
+Releases are automated by [`release.yml`](.github/workflows/release.yml):
+
+1. Bump `version` in `Cargo.toml`, commit, and push.
+2. Tag and push: `git tag v0.x.y && git push origin v0.x.y`.
+3. The workflow verifies (clippy + tests + tag/version match), publishes to
+   crates.io (via the `CARGO_REGISTRY_TOKEN` repo secret), builds Linux and
+   macOS binaries, and attaches them to a GitHub Release.
+
 ## Code of conduct
 
 Be kind and constructive. This is a small project — assume good intent.
