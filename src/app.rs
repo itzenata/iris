@@ -782,6 +782,13 @@ RISK: low|medium|high",
         self.visible.iter().filter_map(move |p| self.readers.get(p))
     }
 
+    /// Estimated USD cost summed over every visible session.
+    pub fn visible_cost(&self) -> f64 {
+        self.sessions()
+            .map(|s| crate::cost::estimate(&s.usage, s.model.as_deref()))
+            .sum()
+    }
+
     /// Sessions belonging to a given project group, in priority order.
     pub fn group_sessions(&self, key: &str) -> Vec<&Session> {
         self.visible

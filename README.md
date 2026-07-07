@@ -47,6 +47,7 @@ A single live pane, refreshed every second:
 | Panel | What it shows |
 |---|---|
 | **Sessions list** | Every session active in the last N minutes, grouped and sorted, color-coded by state |
+| **Aggregate cost** | The header totals the estimated USD spend of everything on screen (also in `iris ls`) |
 | **Status glyphs** | `⚠` pending approval · `●` running · `✓` done / awaiting you · `○` idle |
 | **Per-session meta** | Model (`opus-4-8`, `sonnet`, `haiku`, `fable`), token total, estimated USD cost |
 | **Activity feed** | The latest prompt, thinking, tool call, and result of the entered session, tailed live |

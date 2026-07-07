@@ -35,3 +35,38 @@ pub fn estimate(usage: &Usage, model: Option<&str>) -> f64 {
         + per(usage.cache_creation, p.cache_write)
         + per(usage.cache_read, p.cache_read)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn usage(input: u64, output: u64, cache_creation: u64, cache_read: u64) -> Usage {
+        Usage { input, output, cache_creation, cache_read }
+    }
+
+    #[test]
+    fn estimate_uses_the_model_tier() {
+        let u = usage(1_000_000, 1_000_000, 0, 0);
+        assert_eq!(estimate(&u, Some("claude-haiku-4-5")), 0.80 + 4.0);
+        assert_eq!(estimate(&u, Some("claude-sonnet-5")), 3.0 + 15.0);
+        // Unknown / fable / opus all price at the opus tier.
+        assert_eq!(estimate(&u, Some("claude-fable-5")), 15.0 + 75.0);
+        assert_eq!(estimate(&u, None), 15.0 + 75.0);
+    }
+
+    #[test]
+    fn estimate_counts_cache_tokens() {
+        let u = usage(0, 0, 2_000_000, 10_000_000);
+        let est = estimate(&u, Some("claude-sonnet-5"));
+        assert!((est - (2.0 * 3.75 + 10.0 * 0.30)).abs() < 1e-9);
+    }
+
+    #[test]
+    fn session_costs_sum_across_models() {
+        // The header total is a plain sum of per-session estimates.
+        let a = estimate(&usage(500_000, 100_000, 0, 0), Some("claude-haiku-4-5"));
+        let b = estimate(&usage(500_000, 100_000, 0, 0), Some("claude-opus-4-8"));
+        assert!(a > 0.0 && b > a);
+        assert!((a + b) > b);
+    }
+}

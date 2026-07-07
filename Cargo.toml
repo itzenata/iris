@@ -2,7 +2,7 @@
 # crates.io package name — "iris" itself is a reserved name there.
 # The installed binary stays `iris` (see [[bin]] below).
 name = "iris-tui"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Live supervisor TUI for all active Claude Code sessions"
 license = "MIT"

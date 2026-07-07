@@ -180,6 +180,16 @@ fn print_list(app: &App) {
             break;
         }
     }
+    let _ = writeln!(
+        out,
+        "{:<3} {:<22} {:<16} {:<13} {:>8} {:>7.2}  total (estimate)",
+        "",
+        "",
+        "",
+        "",
+        "",
+        app.visible_cost(),
+    );
 }
 
 fn truncate(s: &str, max: usize) -> String {

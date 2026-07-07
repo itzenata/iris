@@ -481,6 +481,17 @@ fn draw_header(f: &mut Frame, app: &App, area: Rect) {
         ));
     }
 
+    // Aggregate estimated cost of everything on screen — the number nobody
+    // else shows you.
+    let total = app.visible_cost();
+    if total > 0.0 {
+        spans.push(Span::styled("  ~cost ", Style::new().fg(Color::DarkGray)));
+        spans.push(Span::styled(
+            format!("${total:.2}"),
+            Style::new().fg(Color::Green).bold(),
+        ));
+    }
+
     spans.push(Span::styled(
         format!("  · {}m · {now}", app.window.as_secs() / 60),
         Style::new().fg(Color::DarkGray),

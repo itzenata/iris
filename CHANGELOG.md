@@ -4,6 +4,18 @@ Notable changes per release. The section matching the pushed tag becomes the
 GitHub Release body (with GitHub's auto-generated PR/contributor notes
 appended). Format inspired by [Keep a Changelog](https://keepachangelog.com).
 
+## v0.2.0 — 2026-07-07
+
+### Added
+
+- Aggregate estimated cost across all visible sessions: shown live in the
+  dashboard header (`~cost $X.XX`) and as a total line in `iris ls`.
+
+### Fixed
+
+- crates.io metadata now points at the renamed repository
+  (`itzenata/iris-tui`) and its new GitHub Pages URL.
+
 ## v0.1.0 — 2026-07-07
 
 First public release. Published on crates.io as
