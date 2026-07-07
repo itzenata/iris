@@ -14,6 +14,10 @@ use crate::app::{App, GroupInfo, Row, SummaryState};
 use crate::cost;
 use crate::session::{Event, EventKind, Session, Status};
 
+/// iris brand magenta (#c678dd) — the primary color of the docs/landing palette.
+/// An exact RGB value so the accent matches the site regardless of terminal theme.
+const PRIMARY: Color = Color::Rgb(0xc6, 0x78, 0xdd);
+
 /// Icon, color, and short label for a session's current status.
 pub fn status_glyph(s: &Session) -> (&'static str, Color, String) {
     match s.status() {
@@ -283,7 +287,7 @@ fn draw_summary_popup(f: &mut Frame, app: &App) {
     let block = Block::default()
         .borders(Borders::ALL)
         .title(title)
-        .border_style(Style::new().fg(Color::Magenta));
+        .border_style(Style::new().fg(PRIMARY));
     let inner = block.inner(area);
     f.render_widget(block, area);
 
@@ -424,7 +428,7 @@ fn draw_header(f: &mut Frame, app: &App, area: Rect) {
     // Flash and warnings go right after the badge so they never clip off-screen.
     let mut spans = vec![Span::styled(
         " iris ",
-        Style::new().fg(Color::Black).bg(Color::Magenta).bold(),
+        Style::new().fg(Color::Black).bg(PRIMARY).bold(),
     )];
 
     if let Some(status) = &app.flash {
@@ -594,7 +598,7 @@ fn session_item(app: &App, s: &Session, grouped: bool) -> ListItem<'static> {
     }
     spans.push(Span::styled(
         format!(" · {}", short_model(s.model.as_deref())),
-        Style::new().fg(Color::Magenta),
+        Style::new().fg(PRIMARY),
     ));
     spans.push(Span::styled(
         format!(" · {}", human_tokens(s.usage.total())),
@@ -705,7 +709,7 @@ fn draw_detail(f: &mut Frame, app: &App, area: Rect) {
     let stats = vec![
         Line::from(vec![
             Span::styled("model ", Style::new().fg(Color::DarkGray)),
-            Span::styled(short_model(s.model.as_deref()), Style::new().fg(Color::Magenta)),
+            Span::styled(short_model(s.model.as_deref()), Style::new().fg(PRIMARY)),
             Span::styled("   turns ", Style::new().fg(Color::DarkGray)),
             Span::styled(s.assistant_turns.to_string(), Style::new().fg(Color::Reset)),
             Span::styled("   ~cost ", Style::new().fg(Color::DarkGray)),
