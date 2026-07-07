@@ -5,7 +5,7 @@ Thanks for taking the time — iris is young (published on crates.io as [`iris-t
 ## The short version
 
 - **Small fixes** (typos, docs, one-line bug fixes): just open a PR. No issue needed.
-- **New features or behavior changes**: please [open an issue](https://github.com/itzenata/iris/issues/new/choose) first so we can agree on the approach before you write the code. It saves you from building something that doesn't fit — and gets you a faster merge.
+- **New features or behavior changes**: please [open an issue](https://github.com/itzenata/iris-tui/issues/new/choose) first so we can agree on the approach before you write the code. It saves you from building something that doesn't fit — and gets you a faster merge.
 - **Always add a PR description.** A sentence on *what* and *why* is enough.
 
 ## The hard rules (non-negotiable)

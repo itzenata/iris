@@ -3,14 +3,14 @@
 > A live terminal supervisor for every active Claude Code session. **`cargo install iris-tui`** — the binary is `iris`.
 
 [![crates.io](https://img.shields.io/crates/v/iris-tui?logo=rust&color=e6b800)](https://crates.io/crates/iris-tui)
-[![CI](https://img.shields.io/github/actions/workflow/status/itzenata/iris/ci.yml?branch=main&label=CI)](https://github.com/itzenata/iris/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/github/license/itzenata/iris?color=blue)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/itzenata/iris-tui/ci.yml?branch=main&label=CI)](https://github.com/itzenata/iris-tui/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/github/license/itzenata/iris-tui?color=blue)](LICENSE)
 [![Built with Rust](https://img.shields.io/badge/built%20with-Rust-dea584?logo=rust&logoColor=white)](https://www.rust-lang.org)
 [![Made for Claude Code](https://img.shields.io/badge/made%20for-Claude%20Code-c678dd)](https://claude.com/claude-code)
-[![Stars](https://img.shields.io/github/stars/itzenata/iris?style=social)](https://github.com/itzenata/iris/stargazers)
-[![Last commit](https://img.shields.io/github/last-commit/itzenata/iris?color=green)](https://github.com/itzenata/iris/commits/main)
+[![Stars](https://img.shields.io/github/stars/itzenata/iris-tui?style=social)](https://github.com/itzenata/iris-tui/stargazers)
+[![Last commit](https://img.shields.io/github/last-commit/itzenata/iris-tui?color=green)](https://github.com/itzenata/iris-tui/commits/main)
 
-🌐 **Landing page:** [itzenata.github.io/iris](https://itzenata.github.io/iris/)
+🌐 **Landing page:** [itzenata.github.io/iris-tui](https://itzenata.github.io/iris-tui/)
 
 ## What it does
 
@@ -38,7 +38,7 @@ It reads the transcripts Claude Code already writes under `~/.claude/projects/` 
  j/k move  a/d allow/deny  ⏎ details  s summary  i approvals  q quit
 ```
 
-> See a real screenshot of it running on the [landing page](https://itzenata.github.io/iris/).
+> See a real screenshot of it running on the [landing page](https://itzenata.github.io/iris-tui/).
 
 ## What's working today
 
@@ -74,7 +74,7 @@ A single live pane, refreshed every second:
 cargo install iris-tui   # installs the `iris` binary in ~/.cargo/bin
 ```
 
-(The crate is `iris-tui` — `iris` is a reserved name on crates.io — but the command you run is `iris`.) Prebuilt Linux and macOS binaries are on the [releases page](https://github.com/itzenata/iris/releases), or build from source with `cargo install --path .` after cloning.
+(The crate is `iris-tui` — `iris` is a reserved name on crates.io — but the command you run is `iris`.) Prebuilt Linux and macOS binaries are on the [releases page](https://github.com/itzenata/iris-tui/releases), or build from source with `cargo install --path .` after cloning.
 
 Then:
 
@@ -108,7 +108,7 @@ Single static binary, built with Rust + [ratatui](https://ratatui.rs). Reads `~/
 ## Progress
 
 - [x] MIT-licensed, single static Rust binary
-- [x] [Landing page](https://itzenata.github.io/iris/) on GitHub Pages
+- [x] [Landing page](https://itzenata.github.io/iris-tui/) on GitHub Pages
 - [x] [Issue templates](.github/ISSUE_TEMPLATE) for bugs, features, integration ideas
 - [x] Live session discovery + tailing from `~/.claude/projects/`
 - [x] Dashboard: status glyphs, model, tokens, estimated cost
@@ -125,13 +125,13 @@ Single static binary, built with Rust + [ratatui](https://ratatui.rs). Reads `~/
 - [x] [CONTRIBUTING guide](./CONTRIBUTING.md) + PR template
 - [x] crates.io publish metadata in `Cargo.toml`
 - [x] 60s demo video + validation post
-- [x] Published to crates.io as [`iris-tui`](https://crates.io/crates/iris-tui) + prebuilt binaries on [releases](https://github.com/itzenata/iris/releases)
+- [x] Published to crates.io as [`iris-tui`](https://crates.io/crates/iris-tui) + prebuilt binaries on [releases](https://github.com/itzenata/iris-tui/releases)
 
 ## Get involved
 
 - ⭐ Star to follow progress
-- 💡 [Suggest an integration or signal](https://github.com/itzenata/iris/issues/new?template=integration_suggestion.md)
-- 💬 [Open an issue](https://github.com/itzenata/iris/issues/new/choose) for any session-supervision problem you'd want solved
+- 💡 [Suggest an integration or signal](https://github.com/itzenata/iris-tui/issues/new?template=integration_suggestion.md)
+- 💬 [Open an issue](https://github.com/itzenata/iris-tui/issues/new/choose) for any session-supervision problem you'd want solved
 - 🔧 Want to contribute code? Read [CONTRIBUTING.md](./CONTRIBUTING.md) — small fixes go straight to PR, features start as an issue
 
 ## Development
