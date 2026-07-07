@@ -22,6 +22,11 @@ chrono = "0.4"
 dirs = "5"
 ureq = "2"
 
+[dev-dependencies]
+# Test-only: auto-cleaning temp dirs so tests never touch ~/.claude/iris.
+# Not compiled into the release binary.
+tempfile = "3"
+
 [profile.release]
 lto = true
 codegen-units = 1
