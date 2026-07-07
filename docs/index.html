@@ -5,8 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>iris — supervise every Claude Code session</title>
 <meta name="description" content="A live terminal dashboard that supervises all your active Claude Code sessions — status, tokens, cost, AI summaries, and remote tool approvals." />
+<script>
+  // Set the theme before first paint: saved choice, else system preference.
+  (function () {
+    var t = localStorage.getItem('iris-theme');
+    if (t !== 'light' && t !== 'dark') {
+      t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    }
+    document.documentElement.dataset.theme = t;
+  })();
+</script>
 <style>
   :root {
+    color-scheme: dark;
     --bg: #0d0d12;
     --panel: #16161e;
     --border: #2a2a38;
@@ -17,6 +28,23 @@
     --yellow: #e5c07b;
     --red: #e06c75;
     --cyan: #56b6c2;
+    --key-bg: #000;
+    --badge-fg: #000;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #fafafa;
+    --panel: #f0f0f4;
+    --border: #d8d8e0;
+    --fg: #2a2a35;
+    --dim: #6a6a78;
+    --magenta: #a626a4;
+    --green: #2f9e44;
+    --yellow: #b08800;
+    --red: #d63c47;
+    --cyan: #0e8a9e;
+    --key-bg: #fff;
+    --badge-fg: #fff;
   }
   * { box-sizing: border-box; }
   body {
@@ -25,14 +53,23 @@
     color: var(--fg);
     font: 16px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     -webkit-font-smoothing: antialiased;
+    transition: background .2s, color .2s;
   }
+  #theme-toggle {
+    position: fixed; top: 16px; right: 16px;
+    background: var(--panel); color: var(--fg);
+    border: 1px solid var(--border); border-radius: 6px;
+    font: inherit; font-size: 0.9rem; padding: 4px 10px;
+    cursor: pointer;
+  }
+  #theme-toggle:hover { border-color: var(--magenta); }
   a { color: var(--magenta); text-decoration: none; }
   a:hover { text-decoration: underline; }
   .wrap { max-width: 860px; margin: 0 auto; padding: 0 20px; }
 
   header { padding: 72px 0 40px; text-align: center; }
   .badge {
-    display: inline-block; background: var(--magenta); color: #000;
+    display: inline-block; background: var(--magenta); color: var(--badge-fg);
     font-weight: 700; padding: 2px 12px; border-radius: 4px; letter-spacing: 1px;
   }
   h1 { font-size: 2.6rem; margin: 22px 0 8px; letter-spacing: -1px; }
@@ -53,21 +90,21 @@
   .card h3 { margin: 0 0 6px; font-size: 1rem; }
   .card p { margin: 0; color: var(--dim); font-size: 0.92rem; }
 
-  /* mock dashboard */
-  .mock { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-size: 0.86rem; white-space: pre; overflow-x: auto; line-height: 1.5; }
-  .m { color: var(--magenta); } .g { color: var(--green); } .y { color: var(--yellow); }
-  .r { color: var(--red); } .c { color: var(--cyan); } .d { color: var(--dim); }
+  /* real dashboard screenshot */
+  .shot { display: block; width: 100%; border: 1px solid var(--border); border-radius: 8px; }
+  .shot-caption { color: var(--dim); font-size: 0.85rem; margin: 10px 0 0; text-align: center; }
 
   table { width: 100%; border-collapse: collapse; }
   td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
   td.k { color: var(--green); white-space: nowrap; width: 1%; }
-  td.k b { background: #000; border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; color: var(--green); }
+  td.k b { background: var(--key-bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; color: var(--green); }
   td.v { color: var(--dim); }
 
   footer { padding: 40px 0 60px; text-align: center; color: var(--dim); font-size: 0.85rem; border-top: 1px solid var(--border); }
 </style>
 </head>
 <body>
+<button id="theme-toggle" aria-label="Toggle light/dark theme" title="Toggle light/dark theme"></button>
 <div class="wrap">
 
   <header>
@@ -78,21 +115,8 @@
 
   <section>
     <h2>The dashboard</h2>
-    <div class="mock"><span class="m"> iris </span> <span class="g">approved Bash</span>  4 active  <span class="r"> pending 1 </span>  · 3m · 14:21:07
-
-┌ sessions ───────────────┐ ┌ detail ────────────────────────────┐
-│ <span class="r">⚠</span> Build CLI to superv…   │ │ <span class="r">⚠ PENDING APPROVAL — Bash in iris</span>   │
-│   <span class="r">APPROVE Bash — a/d</span>      │ │ git push --force                    │
-│   iris · <span class="m">opus-4-8</span> · 7.2M  │ │ <span class="g">a</span> allow   <span class="r">d</span> deny                   │
-│ <span class="g">●</span> Slack triage           │ │ model opus-4-8  turns 31  ~cost <span class="g">$24</span>  │
-│   running · Bash         │ │ tool calls                          │
-│   slack · <span class="m">haiku-4-5</span>       │ │ Bash    <span class="y">████████░░</span> 18              │
-│ <span class="c">✓</span> Configure CloudSQL…    │ │ Edit    <span class="y">█████░░░░░</span> 9               │
-│   done · awaiting you    │ │ ── activity ──                      │
-│ <span class="d">○</span> Complete five actions  │ │ <span class="c">▸ you</span> add the gitignore           │
-│   idle · lanoria-club    │ │ <span class="y">⚒ Bash</span> cargo build --release      │
-└─────────────────────────┘ └─────────────────────────────────────┘
- j/k move  a/d allow/deny  ⏎ details  s summary  i approvals  q quit</div>
+    <img class="shot" src="assets/iris-white.png" alt="iris supervising two live Claude Code sessions — session list on the left; model, cost, token and tool-call breakdown plus the live activity feed on the right" />
+    <p class="shot-caption">The real thing — iris supervising two live sessions, including the one that built this page.</p>
   </section>
 
   <section>
@@ -136,5 +160,18 @@ iris ls                  <span class="d"># one-shot table, no TUI</span></code><
   </footer>
 
 </div>
+<script>
+  (function () {
+    var btn = document.getElementById('theme-toggle');
+    var root = document.documentElement;
+    function paint() { btn.textContent = root.dataset.theme === 'light' ? '☾ dark' : '☀ light'; }
+    btn.addEventListener('click', function () {
+      root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';
+      localStorage.setItem('iris-theme', root.dataset.theme);
+      paint();
+    });
+    paint();
+  })();
+</script>
 </body>
 </html>
