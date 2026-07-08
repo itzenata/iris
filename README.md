@@ -135,15 +135,7 @@ Single static binary, built with Rust + [ratatui](https://ratatui.rs). Reads `~/
 - 💬 [Open an issue](https://github.com/itzenata/iris-tui/issues/new/choose) for any session-supervision problem you'd want solved
 - 🔧 Want to contribute code? Read [CONTRIBUTING.md](./CONTRIBUTING.md) — small fixes go straight to PR, features start as an issue
 
-## Star history
-
-<a href="https://www.star-history.com/#itzenata/iris-tui&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=itzenata/iris-tui&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=itzenata/iris-tui&type=Date" />
-    <img alt="Star history chart for itzenata/iris-tui" src="https://api.star-history.com/svg?repos=itzenata/iris-tui&type=Date" />
-  </picture>
-</a>
+![iris supervising two live Claude Code sessions — session list on the left; model, cost, token and tool-call breakdown plus the live activity feed on the right](https://raw.githubusercontent.com/itzenata/iris-tui/main/docs/assets/iris-white.png)
 
 ## Development
 
