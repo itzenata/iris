@@ -1,6 +1,6 @@
 # iris
 
-> A live terminal supervisor for every active Claude Code session. **`cargo install iris-tui`** — the binary is `iris`.
+> A live terminal supervisor for every active Claude Code session. **`cargo install iris-tui`** (the binary is `iris`).
 
 [![crates.io](https://img.shields.io/crates/v/iris-tui?logo=rust&color=e6b800)](https://crates.io/crates/iris-tui)
 [![CI](https://img.shields.io/github/actions/workflow/status/itzenata/iris-tui/ci.yml?branch=main&label=CI)](https://github.com/itzenata/iris-tui/actions/workflows/ci.yml)
@@ -14,31 +14,13 @@
 
 ## What it does
 
-A fast terminal dashboard that watches **all your running Claude Code sessions at once** — what each one is doing right now, its model, tokens and estimated cost, an AI "doing / done / next" summary, and one-key approval of pending tool calls routed from any session into a single pane.
+A fast terminal dashboard that watches **all your running Claude Code sessions at once**: what each one is doing right now, its model, tokens and estimated cost, an AI "doing / done / next" summary, and one-key approval of pending tool calls routed from any session into a single pane.
 
-It reads the transcripts Claude Code already writes under `~/.claude/projects/` — **no daemon, no config, nothing to set up** beyond an optional approval hook.
+It reads the transcripts Claude Code already writes under `~/.claude/projects/`. **No daemon, no config, nothing to set up** beyond an optional approval hook.
 
 **Hard rules:** local-first (the only network call is the AI summary you opt into), read-only over your transcripts, and a heartbeat so sessions never hang waiting on iris.
 
-```
- iris  approved Bash   4 active    pending 1    · 3m · 14:21:07
-
-┌ sessions ───────────────┐ ┌ detail ────────────────────────────┐
-│ ⚠ Build CLI to superv…  │ │ ⚠ PENDING APPROVAL — Bash in iris  │
-│   APPROVE Bash — a/d    │ │ git push --force                   │
-│   iris · opus-4-8 · 7.2M│ │ a allow   d deny                   │
-│ ● Slack triage          │ │ model opus-4-8  turns 31  ~cost $24│
-│   running · Bash        │ │ tool calls                         │
-│   slack · haiku-4-5     │ │ Bash    ████████░░ 18              │
-│ ✓ Configure CloudSQL…   │ │ Edit    █████░░░░░ 9               │
-│   done · awaiting you   │ │ ── activity ──                     │
-│ ○ Complete five actions │ │ ▸ you  add the gitignore           │
-│   idle · lanoria-club   │ │ ⚒ Bash cargo build --release       │
-└─────────────────────────┘ └────────────────────────────────────┘
- j/k move  a/d allow/deny  ⏎ details  s summary  i approvals  q quit
-```
-
-> See a real screenshot of it running on the [landing page](https://itzenata.github.io/iris-tui/).
+![iris supervising two live Claude Code sessions: session list on the left; model, cost, token and tool-call breakdown plus the live activity feed on the right](https://raw.githubusercontent.com/itzenata/iris-tui/main/docs/assets/iris-white.png)
 
 ## What's working today
 
@@ -51,21 +33,21 @@ A single live pane, refreshed every second:
 | **Status glyphs** | `⚠` pending approval · `●` running · `✓` done / awaiting you · `○` idle |
 | **Per-session meta** | Model (`opus-4-8`, `sonnet`, `haiku`, `fable`), token total, estimated USD cost |
 | **Activity feed** | The latest prompt, thinking, tool call, and result of the entered session, tailed live |
-| **Tool timeline** | A histogram of which tools a session leans on — spot the one stuck in a build loop |
+| **Tool timeline** | A histogram of which tools a session leans on, so you can spot the one stuck in a build loop |
 | **AI summary** | `s` for a Haiku-generated "doing / done / next" briefing of any session |
 | **Approval modal** | `⏎` opens the full tool input with an `x` AI risk read; `a`/`d` allow or deny |
 
 **Views & navigation:** vim motions (`j`/`k`, `g`/`G`, `Ctrl-d`/`Ctrl-u`) on both the session list and the activity feed, foldable groups (`space`/`z`), `D` to remove a stale session from the view (the transcript on disk is untouched), and an `ls` subcommand that prints a one-shot table with no TUI.
 
-**Remote approvals:** `iris install-hook` registers a `PreToolUse` hook in `settings.json`. With gating armed (`A`), any session's permission prompt routes into iris — approve or deny it, for one session or a whole group, from one place.
+**Remote approvals:** `iris install-hook` registers a `PreToolUse` hook in `settings.json`. With gating armed (`A`), any session's permission prompt routes into iris: approve or deny it, for one session or a whole group, from one place.
 
-**Cost model:** per-model pricing (input / output / cache-write / cache-read) kept as editable constants in [`src/cost.rs`](./src/cost.rs). Figures are estimates — adjust them to your plan.
+**Cost model:** per-model pricing (input / output / cache-write / cache-read) kept as editable constants in [`src/cost.rs`](./src/cost.rs). Figures are estimates; adjust them to your plan.
 
 ## Hard rules
 
 - **Read-only over your data.** iris tails the transcript files Claude Code writes; it never edits them.
 - **Local-first.** The only outbound request is the AI summary / risk read, and only when you press `s` / `x`. No telemetry, no remote config.
-- **Never hangs a session.** iris touches a heartbeat file while running. If it's stale (iris not up) or gating is disarmed, the hook instantly defers to Claude Code's normal permission flow — your sessions are never blocked on a dashboard that isn't there.
+- **Never hangs a session.** iris touches a heartbeat file while running. If it's stale (iris not up) or gating is disarmed, the hook instantly defers to Claude Code's normal permission flow, so your sessions are never blocked on a dashboard that isn't there.
 - **Opt-in interception.** Approval gating is off until you arm it with `A`, and it disarms automatically when iris exits.
 - **Your key, your machine.** The Anthropic API key for summaries is entered in-app (`K`) and saved `0600` in your home directory.
 
@@ -75,7 +57,7 @@ A single live pane, refreshed every second:
 cargo install iris-tui   # installs the `iris` binary in ~/.cargo/bin
 ```
 
-(The crate is `iris-tui` — `iris` is a reserved name on crates.io — but the command you run is `iris`.) Prebuilt Linux and macOS binaries are on the [releases page](https://github.com/itzenata/iris-tui/releases), or build from source with `cargo install --path .` after cloning.
+(The crate is `iris-tui` because `iris` is a reserved name on crates.io, but the command you run is `iris`.) Prebuilt Linux and macOS binaries are on the [releases page](https://github.com/itzenata/iris-tui/releases), or build from source with `cargo install --path .` after cloning.
 
 Then:
 
@@ -86,7 +68,7 @@ iris install-hook        # route approvals through iris (--project for ./.claude
 iris uninstall-hook      # remove the hook
 ```
 
-Single static binary, built with Rust + [ratatui](https://ratatui.rs). Reads `~/.claude/projects/` — override with `-d <path>`.
+Single static binary, built with Rust + [ratatui](https://ratatui.rs). Reads `~/.claude/projects/`; override with `-d <path>`.
 
 ## Keys
 
@@ -116,7 +98,7 @@ Single static binary, built with Rust + [ratatui](https://ratatui.rs). Reads `~/
 - [x] Activity feed with vim navigation and foldable groups
 - [x] Tool-usage histogram per session
 - [x] AI "doing / done / next" summaries (Haiku)
-- [x] `PreToolUse` hook bridge — remote approve / deny from one pane
+- [x] `PreToolUse` hook bridge: remote approve / deny from one pane
 - [x] AI risk read on a pending tool call
 - [x] Heartbeat fallback so sessions never block on iris
 - [x] `ls` one-shot table mode
@@ -133,9 +115,17 @@ Single static binary, built with Rust + [ratatui](https://ratatui.rs). Reads `~/
 - ⭐ Star to follow progress
 - 💡 [Suggest an integration or signal](https://github.com/itzenata/iris-tui/issues/new?template=integration_suggestion.md)
 - 💬 [Open an issue](https://github.com/itzenata/iris-tui/issues/new/choose) for any session-supervision problem you'd want solved
-- 🔧 Want to contribute code? Read [CONTRIBUTING.md](./CONTRIBUTING.md) — small fixes go straight to PR, features start as an issue
+- 🔧 Want to contribute code? Read [CONTRIBUTING.md](./CONTRIBUTING.md): small fixes go straight to PR, features start as an issue
 
-![iris supervising two live Claude Code sessions — session list on the left; model, cost, token and tool-call breakdown plus the live activity feed on the right](https://raw.githubusercontent.com/itzenata/iris-tui/main/docs/assets/iris-white.png)
+## Star History
+
+<a href="https://www.star-history.com/?repos=itzenata%2Firis-tui&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=itzenata/iris-tui&type=date&theme=dark&legend=top-left&sealed_token=q6BDEoKW2M_oldfhlA5PWQM74KooKfmr6jf43ZMo7WQeWbFCCdsoNEufHeN6XjHY_B7hp-Z453_Wj1e-NPNOXwnyi6etvRFL08LF7IJ350hEr-JkxEEetGf97hJqDjFicz9ILkIPD7gWWazOsCztWysK5xeaSvGwwbacLKyAphqM1lM1Z6tOT95x4C0s" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=itzenata/iris-tui&type=date&legend=top-left&sealed_token=q6BDEoKW2M_oldfhlA5PWQM74KooKfmr6jf43ZMo7WQeWbFCCdsoNEufHeN6XjHY_B7hp-Z453_Wj1e-NPNOXwnyi6etvRFL08LF7IJ350hEr-JkxEEetGf97hJqDjFicz9ILkIPD7gWWazOsCztWysK5xeaSvGwwbacLKyAphqM1lM1Z6tOT95x4C0s" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=itzenata/iris-tui&type=date&legend=top-left&sealed_token=q6BDEoKW2M_oldfhlA5PWQM74KooKfmr6jf43ZMo7WQeWbFCCdsoNEufHeN6XjHY_B7hp-Z453_Wj1e-NPNOXwnyi6etvRFL08LF7IJ350hEr-JkxEEetGf97hJqDjFicz9ILkIPD7gWWazOsCztWysK5xeaSvGwwbacLKyAphqM1lM1Z6tOT95x4C0s" />
+ </picture>
+</a>
 
 ## Development
 
@@ -147,7 +137,7 @@ cargo clippy --all-targets -- -D warnings   # CI gates on this
 cargo build --release     # optimized binary (LTO, stripped)
 ```
 
-CI runs clippy (warnings as errors), build, and tests on every push and PR — see [`.github/workflows/ci.yml`](./.github/workflows/ci.yml). Contribution guidelines live in [CONTRIBUTING.md](./CONTRIBUTING.md).
+CI runs clippy (warnings as errors), build, and tests on every push and PR; see [`.github/workflows/ci.yml`](./.github/workflows/ci.yml). Contribution guidelines live in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 Code layout: `main.rs` is the CLI entry and event loop; modules under [`src/`](./src) split as `app` (state), `ui` (rendering), `session` (transcript parsing), `bridge` (the hook + heartbeat), `anthropic` (summaries / risk reads), and `cost` (estimation).
 
